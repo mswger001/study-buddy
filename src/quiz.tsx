@@ -13,9 +13,13 @@ const QuizApp = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [lessonStory, setLessonStory] = useState("");
   const [isReadingStory, setIsReadingStory] = useState(false);
-  const [userAnswer, setUserAnswer] = useState(null);
-  const [userAnswers, setUserAnswers] = useState({});
+  const [userAnswer, setUserAnswer] = useState<number | null>(null);
+  const [userAnswers, setUserAnswers] = useState<{
+    [key: number]: number | null;
+  }>({});
+  // const [userAnswers, setUserAnswers] = useState<number[]>([]); // assuming userAnswers is an array of indices
   const [showFinalResults, setShowFinalResults] = useState(false);
+  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
 
   const apiKey = "AIzaSyC4s6cd7CQG_tm0HcjJSbKgL3o7pwgA1-Y"; // Use environment variable for the API key
   const genAI = new GoogleGenerativeAI(apiKey);
@@ -47,9 +51,14 @@ const QuizApp = () => {
 
       const result = await model.generateContent(prompt);
       setQuestions(
-        result.response.text().split("\n\n**Question ").map(parseQuestion)
+        result.response
+          .text()
+          .split("\n\n**Question ")
+          .map(parseQuestion)
+          .filter((q: Question | null): q is Question => q !== null)
       );
       setCurrentQuestionIndex(0);
+      setCurrentQuestion(questions[0]);
     } catch (error) {
       console.error("Error generating questions:", error);
     } finally {
@@ -57,7 +66,7 @@ const QuizApp = () => {
     }
   };
 
-  const parseQuestion = (questionString) => {
+  const parseQuestion = (questionString: string) => {
     const lines = questionString.trim().split("\n");
     if (lines.length < 6) {
       console.error("Invalid question format:", questionString);
@@ -77,7 +86,7 @@ const QuizApp = () => {
     };
   };
 
-  const shuffleArray = (array) => {
+  const shuffleArray = (array: any[]) => {
     for (let i = array.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [array[i], array[j]] = [array[j], array[i]];
@@ -110,12 +119,16 @@ const QuizApp = () => {
     }
   };
 
-  const handleAnswerChange = (event) => {
+  const handleAnswerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setUserAnswer(parseInt(event.target.value, 10));
   };
 
   const handleSubmitAnswer = () => {
-    setUserAnswers({ ...userAnswers, [currentQuestionIndex]: userAnswer });
+    setUserAnswers((prevUserAnswers) => ({
+      ...prevUserAnswers,
+      [currentQuestionIndex]: userAnswer,
+    }));
+
     if (currentQuestionIndex === questions.length - 1) {
       setShowFinalResults(true);
     } else {
@@ -127,15 +140,13 @@ const QuizApp = () => {
   const handleRestartQuiz = () => {
     setShowFinalResults(false);
     setCurrentQuestionIndex(0);
-    setUserAnswers({});
+    setUserAnswers({}); // Reset to an empty object since userAnswers is now an object
     generateQuestions();
   };
 
   useEffect(() => {
     generateLessonStory();
   }, []);
-
-  const currentQuestion = questions[currentQuestionIndex];
 
   return (
     <div className="quiz-app">
@@ -145,7 +156,7 @@ const QuizApp = () => {
         <button onClick={readStoryAloud} disabled={loading || isReadingStory}>
           {isReadingStory ? "Stop" : "Play"}
         </button>
-        <button onClick={generateQuestions} disabled={loading}>
+        <button onClick={() => generateQuestions()} disabled={loading}>
           Start Quiz
         </button>
       </div>
@@ -190,8 +201,12 @@ const QuizApp = () => {
                     {question.questionText}
                   </p>
                   <p>
-                    Your Answer: {question.options[userAnswers[index]]} (
-                    {isCorrect ? "Correct" : "Incorrect"})
+                    Your Answer:{" "}
+                    {userAnswers[index] !== undefined &&
+                    userAnswers[index] !== null
+                      ? question.options[userAnswers[index] as number]
+                      : "No answer selected"}
+                    ({isCorrect ? "Correct" : "Incorrect"})
                   </p>
                   {!isCorrect && (
                     <p>

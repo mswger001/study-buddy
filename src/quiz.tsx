@@ -41,7 +41,8 @@ const QuizApp = () => {
 
       const result = await model.generateContent(prompt);
       setQuestions(
-        result.response.text().split("\n\n**Question ").map(parseQuestion)
+        result.response.text().split("\n\n**Question ").map(parseQuestion).filter((q: Question | null): q is Question => q !== null); // Filter out null values
+
       );
       setCurrentQuestionIndex(0);
     } catch (error) {

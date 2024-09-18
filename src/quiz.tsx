@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { GoogleGenerativeAI } from "@google/generative-ai"; // Ensure correct import path
 
+interface Question {
+  questionText: string;
+  options: string[];
+  correctAnswer: number; // assuming it's an index of the correct option
+  explanation: string;
+}
 const QuizApp = () => {
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [lessonStory, setLessonStory] = useState("");
@@ -41,8 +47,7 @@ const QuizApp = () => {
 
       const result = await model.generateContent(prompt);
       setQuestions(
-        result.response.text().split("\n\n**Question ").map(parseQuestion).filter((q: Question | null): q is Question => q !== null); // Filter out null values
-
+        result.response.text().split("\n\n**Question ").map(parseQuestion)
       );
       setCurrentQuestionIndex(0);
     } catch (error) {

@@ -133,6 +133,7 @@ const QuizApp = () => {
       setShowFinalResults(true);
     } else {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setCurrentQuestion(questions[currentQuestionIndex]);
       setUserAnswer(null);
     }
   };
